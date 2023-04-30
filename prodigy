@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+
+arg="$1"
+# arg="index.html"
+conf="test.conf"
+launcher="rofi -dmenu -p open-with"
+
+get_ext() {
+    ext_regex='.*[.](.*[^.]$)'
+    if [[ $arg =~ $ext_regex ]]; then
+        ext="${BASH_REMATCH[1]}"
+    fi
+}
+get_mime() {
+    mime="$(file -b --mime-type "$arg")"
+    mime_general="$(cut -d '/' -f 1 <<<"$mime")"
+}
+
+run_by_ext_mime() {
+    [[ -n $mime_general ]] && program="$(grep -P -m 1 "${mime_general}\s*:" "$conf" | cut -d ":" -f 2)"
+    [[ -n $mime ]] && program="$(grep -P -m 1 "${mime}\s*:" "$conf" | cut -d ":" -f 2)"
+    [[ -n $ext ]] && program="$(grep -P -m 1 "${ext}\s*:" "$conf" | cut -d ":" -f 2)"
+    [[ -n $program ]] && setsid $program "$arg" && exit 0
+}
+
+run_by_desktop_file() {
+    [[ -z $mime ]] && return
+    declare -A desktop_files
+    desktop_paths=([1]="/usr/share/applications")
+    [[ -d "${HOME}/.local/share/applications" ]] && desktop_paths=([0]="$HOME/.local/share/applications")
+    for dir in "${desktop_paths[@]}"; do
+        desktop_matches="$(grep -RP -m 1 "^MimeType=.*${mime}" "$dir")"
+    done
+    for match in $desktop_matches; do
+        file_name="$(cut -d ":" -f 1 <<<"$match")"
+        count="$(cut -d ":" -f 2 <<<"$match" | grep -o "/" | wc -l)"
+        ## echo $count = $file_name
+        desktop_files["$count"]="$file_name"
+    done
+
+    most="$(for count in "${!desktop_files[@]}"; do echo "$count"; done | sort -n | tail -n 1)"
+    desktop_file="${desktop_files["$most"]}"
+    echo "$desktop_file"
+
+    # get program
+    program="$(grep -m 1 "^Exec=" "$desktop_file" | cut -d "=" -f 2 | cut -d " " -f 1)"
+    echo $program
+    [[ -n $program ]] && setsid $program "$arg" && exit 0
+
+}
+run_by_launcher() {
+    [[ -n $launcher ]] && setsid $($launcher) "$arg"
+}
+
+if [[ -e $arg ]]; then
+    arg="$(realpath "$arg")"
+    get_ext
+    get_mime
+
+elif [[ $arg =~ (^[a-zA-Z-]+) ]]; then
+    protocol="${BASH_REMATCH[1]}"
+    case "$protocol" in
+    http) mime="x-scheme-handler/http" ;;
+    https) mime="x-scheme-handler/https" ;;
+    magnet) mime="x-scheme-handler/magnet" ;;
+    mailto) mime="x-scheme-handler/mailto" ;;
+    irc) mime="x-scheme-handler/irc" ;;
+
+    esac
+else
+    echo -e "\e[38;5;202mInvalid arugument: argument should be file or url\e[m" >&2 && exit 1
+fi
+
+run_by_ext_mime
+run_by_desktop_file
+run_by_launcher
