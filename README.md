@@ -1,20 +1,22 @@
 
 # Prodigy
-__A simple yet powerful alternative to xdg-open__
+__A simple yet powerful alternative to xdg-open__  
+
+Automatically opens a file or url by suitable application
 
 _needs to be polished but works just fine ;)_
 
 ![Shell Script](https://img.shields.io/badge/shell_script-%23121011.svg?style=for-the-badge&logo=gnu-bash&logoColor=white)
 
 
-## Features
-__Supports opening by__
+## Features  
+- Easy configuration
+- Quite intelligent (_not really lol_)
+- Can specify terminal and launcher (soon)  
+#### Supports opening file by
+- Extension
+- Mime
 - Desktop files
-- Extensions
-- Mimetypes
-- URLs
-- Custom launchers like rofi, dmenu
-- Can use custom terminal (comming soon)
 
 
 ## Roadmap
@@ -28,8 +30,6 @@ __Supports opening by__
 
 Contributions are always welcome!  
 _please critisize me lol_
-
-![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)
 
 ## Authors
 
