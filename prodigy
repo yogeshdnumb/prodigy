@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
+# set -x
+
 arg="$1"
-# arg="index.html"
-conf="test.conf"
-launcher="rofi -dmenu -p open-with"
+
+conf="$HOME/.config/prodigy/prodigy.conf"
 
 get_ext() {
     ext_regex='.*[.](.*[^.]$)'
@@ -18,38 +19,53 @@ get_mime() {
 
 run_by_ext_mime() {
     [[ -n $mime_general ]] && program="$(grep -P -m 1 "${mime_general}\s*:" "$conf" | cut -d ":" -f 2)"
-    [[ -n $mime ]] && program="$(grep -P -m 1 "${mime}\s*:" "$conf" | cut -d ":" -f 2)"
     [[ -n $ext ]] && program="$(grep -P -m 1 "${ext}\s*:" "$conf" | cut -d ":" -f 2)"
-    [[ -n $program ]] && setsid $program "$arg" && exit 0
+    [[ -n $mime ]] && program="$(grep -P -m 1 "${mime}\s*:" "$conf" | cut -d ":" -f 2)"
+    [[ -n $program ]] && echo "$program" && setsid $program "$arg" && exit 0
 }
 
 run_by_desktop_file() {
     [[ -z $mime ]] && return
+
     declare -A desktop_files
-    desktop_paths=([1]="/usr/share/applications")
-    [[ -d "${HOME}/.local/share/applications" ]] && desktop_paths=([0]="$HOME/.local/share/applications")
-    for dir in "${desktop_paths[@]}"; do
-        desktop_matches="$(grep -RP -m 1 "^MimeType=.*${mime}" "$dir")"
-    done
-    for match in $desktop_matches; do
-        file_name="$(cut -d ":" -f 1 <<<"$match")"
+    desktop_paths[1]="/usr/share/applications"
+    [[ -d "${HOME}/.local/share/applications" ]] && desktop_paths[0]="$HOME/.local/share/applications"
+
+    desktop_match=$(for dir in "${desktop_paths[@]}"; do
+        grep -RP -m 1 "^MimeType=.*${mime}" "$dir" && break
+    done | sort)
+
+    for match in $desktop_match; do
         count="$(cut -d ":" -f 2 <<<"$match" | grep -o "/" | wc -l)"
-        ## echo $count = $file_name
+        file_name="$(cut -d ":" -f 1 <<<"$match")"
+        echo $count = $file_name
         desktop_files["$count"]="$file_name"
     done
 
-    most="$(for count in "${!desktop_files[@]}"; do echo "$count"; done | sort -n | tail -n 1)"
-    desktop_file="${desktop_files["$most"]}"
-    echo "$desktop_file"
+    most_mimed="$(for count in "${!desktop_files[@]}"; do echo "$count"; done | sort -n | head -n 1)"
+    desktop_file="${desktop_files["$most_mimed"]}"
 
-    # get program
     program="$(grep -m 1 "^Exec=" "$desktop_file" | cut -d "=" -f 2 | cut -d " " -f 1)"
-    echo $program
-    [[ -n $program ]] && setsid $program "$arg" && exit 0
+    echo "$program"
+    grep "Terminal=true" "$desktop_file" &>/dev/null && {
+        setsid $terminal $program "$arg"
+        exit 0
+    }
+    setsid $program "$arg" && exit 0
 
 }
+
+get_config_vars() {
+    launcher="$(grep -m 1 "launcher*=" "$conf" | cut -d "=" -f 2)"
+    [[ -z $launcher ]] && launcher="rofi -location 2 -dmenu -l 1 -p open-with"
+    terminal="$(grep -m 1 "launcher*=" "$conf" | cut -d "=" -f 2)"
+    [[ -z $terminal ]] && terminal="alacritty -e"
+}
+
 run_by_launcher() {
-    [[ -n $launcher ]] && setsid $($launcher) "$arg"
+    [[ -n $launcher ]] || exit 1
+    program="$($launcher)"
+    setsid $program "$arg" || { notify-send -t 500 "Prodigy cannot find $program" && exit 1; }
 }
 
 if [[ -e $arg ]]; then
@@ -70,6 +86,8 @@ elif [[ $arg =~ (^[a-zA-Z-]+) ]]; then
 else
     echo -e "\e[38;5;202mInvalid arugument: argument should be file or url\e[m" >&2 && exit 1
 fi
+
+get_config_vars
 
 run_by_ext_mime
 run_by_desktop_file
