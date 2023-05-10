@@ -1,4 +1,3 @@
-
 # Prodigy
 __A simple yet powerful alternative to xdg-open__  
 
