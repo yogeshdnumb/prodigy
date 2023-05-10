@@ -4,7 +4,7 @@
 
 arg="$1"
 
-conf="$HOME/.config/prodigy/prodigy.conf"
+readonly conf="$HOME/.config/prodigy/prodigy.conf"
 
 get_ext() {
     ext_regex='.*[.](.*[^.]$)'
@@ -38,7 +38,7 @@ run_by_desktop_file() {
     for match in $desktop_match; do
         count="$(cut -d ":" -f 2 <<<"$match" | grep -o "/" | wc -l)"
         file_name="$(cut -d ":" -f 1 <<<"$match")"
-        echo $count = $file_name
+        echo "$count" = "$file_name"
         desktop_files["$count"]="$file_name"
     done
 
@@ -47,6 +47,7 @@ run_by_desktop_file() {
 
     program="$(grep -m 1 "^Exec=" "$desktop_file" | cut -d "=" -f 2 | cut -d " " -f 1)"
     echo "$program"
+    [[ -z $program ]] && return
     grep "Terminal=true" "$desktop_file" &>/dev/null && {
         setsid $terminal $program "$arg"
         exit 0
@@ -64,8 +65,7 @@ get_config_vars() {
 
 run_by_launcher() {
     [[ -n $launcher ]] || exit 1
-    program="$($launcher)"
-    setsid $program "$arg" || { notify-send -t 500 "Prodigy cannot find $program" && exit 1; }
+    program="$($launcher)" && setsid $program "$arg" || { notify-send -t 500 "Prodigy cannot find $program" && exit 1; }
 }
 
 if [[ -e $arg ]]; then
@@ -81,6 +81,7 @@ elif [[ $arg =~ (^[a-zA-Z-]+) ]]; then
     magnet) mime="x-scheme-handler/magnet" ;;
     mailto) mime="x-scheme-handler/mailto" ;;
     irc) mime="x-scheme-handler/irc" ;;
+    *) mime="x-scheme-handler/https" ;;
 
     esac
 else
