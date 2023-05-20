@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# set -x
+set -x
 
 arg="$1"
 
@@ -34,7 +34,7 @@ run_by_desktop_file() {
     desktop_match=$(for dir in "${desktop_paths[@]}"; do
         grep -RP -m 1 "^MimeType=.*${mime}" "$dir" && break
     done | sort)
-
+    [[ -z $desktop_match ]] && return
     for match in $desktop_match; do
         count="$(cut -d ":" -f 2 <<<"$match" | grep -o "/" | wc -l)"
         file_name="$(cut -d ":" -f 1 <<<"$match")"
