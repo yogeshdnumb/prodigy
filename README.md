@@ -25,7 +25,8 @@ _just downlaod the script and add it to path (optionally the config file at ~/.c
 
 ```bash
 wget https://github.com/yogeshdcool/prodigy/raw/main/prodigy -P ~/.local/share/bin # or anywhere at path
-mkdir -P .config/prodigy # (optional)
+# optional
+mkdir -P .config/prodigy
 wget -O prodigy.conf https://github.com/yogeshdcool/prodigy/raw/main/prodigy.conf.example -P ~/.config/prodigy
 ```
 
