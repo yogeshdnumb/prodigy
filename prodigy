@@ -1,95 +1,123 @@
 #!/usr/bin/env bash
 
-set -x
-
+# set -x
+[[ -z $1 ]] && echo -e "\e[38;5;202mInvalid arugument: argument should be a file or url\e[m" >&2 && exit 1
 arg="$1"
 
-readonly conf="$HOME/.config/prodigy/prodigy.conf"
+get_mime_ext() {
 
-get_ext() {
+    # Getting mimetype from url protocol
+    if ! [[ -e $arg ]]; then
+        protocol_regex="^([a-zA-Z-]+):"
+        if [[ $arg =~ $protocol_regex ]]; then
+            echo XXXXX "${BASH_REMATCH[1]}" not cool
+            protocol="${BASH_REMATCH[1]}"
+            case "$protocol" in
+            http) mime="x-scheme-handler/http" ;;
+            https) mime="x-scheme-handler/https" ;;
+            magnet) mime="x-scheme-handler/magnet" ;;
+            mailto) mime="x-scheme-handler/mailto" ;;
+            irc) mime="x-scheme-handler/irc" ;;
+            *) mime="x-scheme-handler/https" ;;
+            esac
+            return
+        else
+
+            echo "No file"
+            exit 0
+        fi
+
+    fi
+    echo XXXXXXXXXXXXXXXXX
+    # Getting mimetype and the first part of mimetype(text in text/plain)
+    arg="$(realpath "$arg")"
+    mime="$(file -b --mime-type "$arg")"
+    mime_general="$(cut -d '/' -f 1 <<<"$mime")"
+    mime_general+="/"
+    echo XXXXX $mime
+    echo XXXXX "${mime_general}"
+
+    # Getting the extension
     ext_regex='.*[.](.*[^.]$)'
     if [[ $arg =~ $ext_regex ]]; then
         ext="${BASH_REMATCH[1]}"
+        echo XXXXX $ext
     fi
-}
-get_mime() {
-    mime="$(file -b --mime-type "$arg")"
-    mime_general="$(cut -d '/' -f 1 <<<"$mime")"
 }
 
 run_by_ext_mime() {
-    [[ -n $mime_general ]] && program="$(grep -P -m 1 "${mime_general}\s*:" "$conf" | cut -d ":" -f 2)"
-    [[ -n $ext ]] && program="$(grep -P -m 1 "${ext}\s*:" "$conf" | cut -d ":" -f 2)"
-    [[ -n $mime ]] && program="$(grep -P -m 1 "${mime}\s*:" "$conf" | cut -d ":" -f 2)"
-    [[ -n $program ]] && echo "$program" && setsid $program "$arg" && exit 0
+    readonly conf="./prodigy.conf"
+    ! [[ -e $conf ]] && return
+
+    get_program() {
+        # Checks and get program using mime_general, extension, mimetype in order
+        echo $1
+        [[ -z $program ]] && [[ -n $1 ]] && program="$(grep -P -m 1 "${1}\s*:" "$conf" | cut -d ":" -f 2)" && echo XXXXX $program
+
+    }
+
+    get_mime_ext
+
+    get_program "$mime_general"
+    get_program "$mime"
+    get_program "$ext"
+
+    [[ -n $program ]] && echo "$program" && { setsid $program "$arg" & } && exit 0
 }
 
 run_by_desktop_file() {
     [[ -z $mime ]] && return
 
-    declare -A desktop_files
-    desktop_paths[1]="/usr/share/applications"
-    [[ -d "${HOME}/.local/share/applications" ]] && desktop_paths[0]="$HOME/.local/share/applications"
+    desktop_files_paths=("/usr/share/applications" "$HOME/.local/share/applications")
 
-    desktop_match=$(for dir in "${desktop_paths[@]}"; do
-        grep -RP -m 1 "^MimeType=.*${mime}" "$dir" && break
-    done | sort)
-    [[ -z $desktop_match ]] && return
-    for match in $desktop_match; do
-        count="$(cut -d ":" -f 2 <<<"$match" | grep -o "/" | wc -l)"
+    desktop_file_matches=$(for dir in "${desktop_files_paths[@]}"; do
+        grep -RP -m 1 "^MimeType=.*${mime}" "$dir"
+    done)
+
+    # echo XXXXX "$desktop_file_matches"
+
+    [[ -z $desktop_file_matches ]] && return
+
+    for match in $desktop_file_matches; do
+        supported_mimes_count="$(cut -d ":" -f 2 <<<"$match" | grep -o "/" | wc -l)"
         file_name="$(cut -d ":" -f 1 <<<"$match")"
-        echo "$count" = "$file_name"
-        desktop_files["$count"]="$file_name"
+        echo XXXXX "$supported_mimes_count" = "$file_name"
+        desktop_files["$supported_mimes_count"]="$file_name"
     done
 
-    most_mimed="$(for count in "${!desktop_files[@]}"; do echo "$count"; done | sort -n | head -n 1)"
-    desktop_file="${desktop_files["$most_mimed"]}"
+    desktop_file="${desktop_files[-1]}" # gets the program that supports most mimetypes
+
+    echo $desktop_file
 
     program="$(grep -m 1 "^Exec=" "$desktop_file" | cut -d "=" -f 2 | cut -d " " -f 1)"
-    echo "$program"
     [[ -z $program ]] && return
+    echo $program
+
     grep "Terminal=true" "$desktop_file" &>/dev/null && {
-        setsid $terminal $program "$arg"
-        exit 0
+        [[ -e $conf ]] && terminal="$(grep -P "terminal.*=" "$conf" | cut -d "=" -f 2)"
+        [[ -z $terminal ]] && terminal="alacritty"
+        echo XXXXX $terminal
+        { setsid $terminal -e $program "$arg" & } && exit 0
+
     }
-    setsid $program "$arg" && exit 0
+    { setsid $program "$arg" & } && exit 0
 
-}
-
-get_config_vars() {
-    launcher="$(grep -m 1 "launcher*=" "$conf" | cut -d "=" -f 2)"
-    [[ -z $launcher ]] && launcher="rofi -location 2 -dmenu -l 1 -p open-with"
-    terminal="$(grep -m 1 "launcher*=" "$conf" | cut -d "=" -f 2)"
-    [[ -z $terminal ]] && terminal="alacritty -e"
 }
 
 run_by_launcher() {
-    [[ -n $launcher ]] || exit 1
-    program="$($launcher)" && setsid $program "$arg" || { notify-send -t 500 "Prodigy cannot find $program" && exit 1; }
+
+    [[ -e $conf ]] && launcher="$(grep -P "launcher.*=" "$conf" | cut -d "=" -f 2)"
+    [[ -z $launcher ]] && launcher="rofi -dmenu -l 1 -location 2 -p "open\ with:""
+    program="$($launcher)"
+    echo XXXXX $launcher $program
+
+    [[ -n $program ]] && { setsid $program "$arg" & } && exit 0 || exit 1
 }
 
+get_mime_ext
+
 if [[ -e $arg ]]; then
-    arg="$(realpath "$arg")"
-    get_ext
-    get_mime
-
-elif [[ $arg =~ (^[a-zA-Z-]+) ]]; then
-    protocol="${BASH_REMATCH[1]}"
-    case "$protocol" in
-    http) mime="x-scheme-handler/http" ;;
-    https) mime="x-scheme-handler/https" ;;
-    magnet) mime="x-scheme-handler/magnet" ;;
-    mailto) mime="x-scheme-handler/mailto" ;;
-    irc) mime="x-scheme-handler/irc" ;;
-    *) mime="x-scheme-handler/https" ;;
-
-    esac
-else
-    echo -e "\e[38;5;202mInvalid arugument: argument should be file or url\e[m" >&2 && exit 1
+    run_by_ext_mime
+    run_by_desktop_file
 fi
-
-get_config_vars
-
-run_by_ext_mime
-run_by_desktop_file
 run_by_launcher
