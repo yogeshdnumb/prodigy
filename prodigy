@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-# set -x
 [[ -z $1 ]] && echo -e "\e[38;5;202mInvalid arugument: argument should be a file or url\e[m" >&2 && exit 1
 arg="$1"
 
@@ -23,12 +22,11 @@ get_mime_ext() {
             return
         else
 
-            echo "No file"
-            exit 0
+            echo -e "\e[38;5;202mInvalid arugument: argument should be a file or url\e[m" >&2 && exit 1
+
         fi
 
     fi
-    echo XXXXXXXXXXXXXXXXX
     # Getting mimetype and the first part of mimetype(text in text/plain)
     arg="$(realpath "$arg")"
     mime="$(file -b --mime-type "$arg")"
