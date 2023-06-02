@@ -2,7 +2,18 @@
 
 [[ -z $1 ]] && echo -e "\e[38;5;202mInvalid arugument: argument should be a file or url\e[m" >&2 && exit 1
 arg="$1"
+# arg="$HOME/Pictures/Wallpapers/aesthetic_wallpapers/4k-ai-mountain.jpg"
 
+terminal="alacritty"
+launcher="rofi -dmenu -l 1 -location 2 -p open-with"
+. "$HOME/.config/prodigy/prodigy.conf"
+
+mime_extract() {
+    # extract general and specific part from mimetype
+    mime_specifc="$(cut -d "/" -f 2 <<<"$1" | sed "s/-/_/g")"
+    mime_general="$(cut -d "/" -f 1 <<<"$1" | sed "s/-/_/g")"
+
+}
 get_mime_ext() {
 
     # Getting mimetype from url protocol
@@ -18,6 +29,7 @@ get_mime_ext() {
             irc) mime="x-scheme-handler/irc" ;;
             *) mime="x-scheme-handler/https" ;; # Remove this if you want launcher for other urls
             esac
+            mime_extract $mime
             return
         else
             echo -e "\e[38;5;202mInvalid arugument: argument should be a file or url\e[m" >&2 && exit 1
@@ -25,31 +37,23 @@ get_mime_ext() {
     fi
 
     # Getting mimetype and the first part of mimetype(text in text/plain)
+    mime_extract $
     arg="$(realpath "$arg")"
     mime="$(file -b --mime-type "$arg")"
-    mime_general="$(cut -d '/' -f 1 <<<"$mime")"
-    mime_general+="/"
-
+    mime_extract $mime
     # Getting the extension
     ext_regex='.*[.](.*[^.]$)'
     if [[ $arg =~ $ext_regex ]]; then
         ext="${BASH_REMATCH[1]}"
     fi
+
 }
-
 run_by_ext_mime() {
-    readonly conf="$HOME/.config/prodigy/prodigy.conf"
-    ! [[ -e $conf ]] && return
 
-    get_program() {
-        # Checks and get program using mime_general, extension, mimetype in order
-        [[ -z $program ]] && [[ -n $1 ]] && program="$(grep -P -m 1 "${1}\s*:" "$conf" | cut -d ":" -f 2)"
-
-    }
-
-    get_program "$mime_general"
-    get_program "$mime"
-    get_program "$ext"
+    ! [[ -e ~/.config/prodigy/prodigy.conf ]] && return
+    [[ -z $program ]] && [[ -n $ext ]] && program=${!ext}
+    [[ -z $program ]] && program=${!mime_specifc}
+    [[ -z $program ]] && program=${!mime_general}
 
     [[ -n $program ]] && { setsid $program "$arg" & } && exit 0
 }
@@ -78,8 +82,6 @@ run_by_desktop_file() {
     [[ -z $program ]] && return
 
     grep "Terminal=true" "$desktop_file" &>/dev/null && {
-        [[ -e $conf ]] && terminal="$(grep -P "terminal.*=" "$conf" | cut -d "=" -f 2)"
-        [[ -z $terminal ]] && terminal="alacritty"
         { setsid $terminal -e $program "$arg" & } && exit 0
 
     }
@@ -89,8 +91,6 @@ run_by_desktop_file() {
 
 run_by_launcher() {
 
-    [[ -e $conf ]] && launcher="$(grep -P "launcher.*=" "$conf" | cut -d "=" -f 2)"
-    [[ -z $launcher ]] && launcher="rofi -dmenu -l 1 -location 2 -p "open\ with:""
     program="$($launcher)"
 
     [[ -n $program ]] && { setsid $program "$arg" & } && exit 0 || exit 1
