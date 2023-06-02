@@ -11,6 +11,7 @@ Automatically opens a file or url by suitable application
 -   Easy configuration
 -   Quite intelligent (_not really lol_)
 -   Supports terminal and launcher
+-   Opens a file using the application that supports most types
 
 ### Supports opening file by
 
@@ -25,7 +26,7 @@ _just downlaod the script and add it to path (optionally the config file at ~/.c
 
 ```bash
 wget https://github.com/yogeshdcool/prodigy/raw/main/prodigy -P ~/.local/share/bin # or anywhere at path
-# optional
+# optional if ot it prodigy uses dekstop files
 mkdir -P .config/prodigy
 wget -O prodigy.conf https://github.com/yogeshdcool/prodigy/raw/main/prodigy.conf.example -P ~/.config/prodigy
 ```
@@ -36,12 +37,13 @@ wget -O prodigy.conf https://github.com/yogeshdcool/prodigy/raw/main/prodigy.con
 terminal=alacritty     --> terminal for needed applications (= is used for options)
 launcher=rofi -d       --> launcher to use if no applications found
 
-mp3:       vlc          --> by Extension (: is used)
-audio/mp3: vlc           --> by mimetype
-audio/:    vlc          --> by the first part of mime type (general mime)
+mp3:       vlc         --> by Extension (: is used)
+audio/mp3: vlc         --> by mimetype
+audio/:    vlc         --> by the first part of mime type (general mime)
+x-scheme-handler/https:  librewolf        --> supports urls
 
-x-scheme-handler/https: librewolf        --> supports urls
 application/x-bittorent: deluge
+inode/directory:         thunar
 ```
 
 ## Contributing

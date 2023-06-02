@@ -38,7 +38,7 @@ get_mime_ext() {
 }
 
 run_by_ext_mime() {
-    readonly conf="./prodigy.conf"
+    readonly conf="$HOME/.config/prodigy/prodigy.conf"
     ! [[ -e $conf ]] && return
 
     get_program() {
@@ -51,7 +51,7 @@ run_by_ext_mime() {
     get_program "$mime"
     get_program "$ext"
 
-    [[ -n $program ]] && echo "$program" && { setsid $program "$arg" & } && exit 0
+    [[ -n $program ]] && { setsid $program "$arg" & } && exit 0
 }
 
 run_by_desktop_file() {
@@ -99,5 +99,5 @@ run_by_launcher() {
 get_mime_ext
 
 run_by_ext_mime
-# run_by_desktop_file
+run_by_desktop_file
 run_by_launcher
