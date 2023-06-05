@@ -49,16 +49,20 @@ get_mime_ext() {
 
 }
 run_by_ext_mime() {
-
+    # checks config file for extension and mime type metches and runs it
     ! [[ -e ~/.config/prodigy/prodigy.conf ]] && return
+    echo $mime $mime_general $mime_specifc $ext
     [[ -z $program ]] && [[ -n $ext ]] && program=${!ext}
-    [[ -z $program ]] && program=${!mime_specifc}
     [[ -z $program ]] && program=${!mime_general}
+    [[ -z $program ]] && program=${!mime_specifc}
+    echo ${mime_specifc}
+    echo ${!mime_specifc}
 
     [[ -n $program ]] && { setsid $program "$arg" & } && exit 0
 }
 
 run_by_desktop_file() {
+    # if the abovefunction fails uses desktop files to find the program
     [[ -z $mime ]] && return
 
     desktop_files_paths=("/usr/share/applications" "$HOME/.local/share/applications")
@@ -77,27 +81,24 @@ run_by_desktop_file() {
     done
 
     desktop_file="${desktop_files[-1]}" # gets the program that supports most mimetypes
-
     program="$(grep -m 1 "^Exec=" "$desktop_file" | cut -d "=" -f 2 | cut -d " " -f 1)"
     [[ -z $program ]] && return
 
     grep "Terminal=true" "$desktop_file" &>/dev/null && {
         { setsid $terminal -e $program "$arg" & } && exit 0
-
     }
     { setsid $program "$arg" & } && exit 0
 
 }
 
 run_by_launcher() {
-
+    # if the above function fails asks the user for program via rofi or other launcher specified
     program="$($launcher)"
-
     [[ -n $program ]] && { setsid $program "$arg" & } && exit 0 || exit 1
 }
 
-get_mime_ext
+get_mime_ext # gets mimetype and extesnion
 
-run_by_ext_mime
-run_by_desktop_file
-run_by_launcher
+run_by_ext_mime     # tries to run using mimetypes and extennsions if found in config file
+run_by_desktop_file # if the above function fails uses the mimetype and desktop files to find suitable program that supports most mimetypes and executes it
+run_by_launcher     # if the above function fails if no program found aske user by rofi or launcher specified

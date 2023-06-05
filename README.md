@@ -25,36 +25,37 @@ but it is confusing and not friendly with window managers so that's why I create
 
 ## Installation
 
-_just download the script and add it to path (optionally the config file at ~/.config/prodigy/prodigy.conf)_
-
+_download the prodigy script, rename it to xdg-open and add it to path. Install alacritty(terminal) and rofi(launcher menu) or change them in the config_  
+__or__
 ```bash
-wget https://github.com/yogeshdcool/prodigy/raw/main/prodigy -P ~/.local/share/bin # or anywhere at path
-# optional if ot it prodigy uses dekstop files
-mkdir -P .config/prodigy
-wget -O prodigy.conf https://github.com/yogeshdcool/prodigy/raw/main/prodigy.conf -P ~/.config/prodigy
+# if you do not have xdg-open or xdg-utils installed
+curl -o /usr/bin https://raw.githubusercontent.com/yogeshdcool/prodigy/main/prodigy # or anywhere at path
+# if you have xdg-open in your system
+curl -o $(which xdg-open) https://raw.githubusercontent.com/yogeshdcool/prodigy/main/prodigy
+
 ```
 
 ## Configuration
 
 ````
-text=alacritty -e nvim
-
 image=nsxiv # by general mime type ("IMAGE"/jpege)
 jpeg=nsxiv  # by specific mimetype (image/"JPEG")
 jpg=nsiv    # by extension (wallpaper."jpg")
 
 https=librewolf
 x_scheme_handler=librewolf # all urls (not x-scheme-handler...use _ not - )
-directory=thunar
 
-terminal=alacritty # for opening files using desktop files
-launcher="rofi -dmenu -p open-with"
+text="alacritty -e nvim"
+directory="alacritty -e lf"
+zip="file-roller"
+audio="mpv --no-audio-display"
 
+terminal=alacritty                  # for opening files using desktop files (default)
+launcher="rofi -dmenu -p open-with" # (default)
 
+```
 
-```alcitty -e bin
-
-**for mimetypes use \_ instead of - **
+__for mimetypes use \_ instead of - __
 
 ## Contributing
 
