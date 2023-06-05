@@ -26,7 +26,8 @@ but it is confusing and not friendly with window managers so that's why I create
 ## Installation
 
 _download the prodigy script, rename it to xdg-open and add it to path. Install alacritty(terminal) and rofi(launcher menu) or change them in the config_  
-__or__
+**or**
+
 ```bash
 # if you do not have xdg-open or xdg-utils installed
 curl -o /usr/bin https://raw.githubusercontent.com/yogeshdcool/prodigy/main/prodigy # or anywhere at path
@@ -37,13 +38,13 @@ curl -o $(which xdg-open) https://raw.githubusercontent.com/yogeshdcool/prodigy/
 
 ## Configuration
 
-````
+```
 image=nsxiv # by general mime type ("IMAGE"/jpege)
 jpeg=nsxiv  # by specific mimetype (image/"JPEG")
 jpg=nsiv    # by extension (wallpaper."jpg")
 
 https=librewolf
-x_scheme_handler=librewolf # all urls (not x-scheme-handler...use _ not - )
+x_scheme_handler=librewolf # all urls (not x-scheme-handler. use _ not - )
 
 text="alacritty -e nvim"
 directory="alacritty -e lf"
@@ -55,7 +56,7 @@ launcher="rofi -dmenu -p open-with" # (default)
 
 ```
 
-__for mimetypes use \_ instead of - __
+**for mimetypes use \_ instead of - **
 
 ## Contributing
 
@@ -69,4 +70,3 @@ _please critisize me ;)_
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
-````
