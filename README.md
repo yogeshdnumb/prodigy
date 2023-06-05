@@ -39,7 +39,7 @@ curl -o $(which xdg-open) https://raw.githubusercontent.com/yogeshdcool/prodigy/
 ## Configuration
 
 ```
-image=nsxiv # by general mime type ("IMAGE"/jpege)
+image=nsxiv # by general mime type ("IMAGE"/jpeg)
 jpeg=nsxiv  # by specific mimetype (image/"JPEG")
 jpg=nsiv    # by extension (wallpaper."jpg")
 
@@ -53,10 +53,9 @@ audio="mpv --no-audio-display"
 
 terminal=alacritty                  # for opening files using desktop files (default)
 launcher="rofi -dmenu -p open-with" # (default)
-
 ```
 
-**for mimetypes use \_ instead of - **
+**for mimetypes use \_ instead of -**
 
 ## Contributing
 
