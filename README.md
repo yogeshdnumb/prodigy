@@ -25,7 +25,7 @@ but it is confusing and not friendly with window managers so that's why I create
 
 ## Installation
 
-_download the prodigy script, rename it to xdg-open and add it to path. Install alacritty(terminal) and rofi(launcher menu) or change them in the config_  
+_download the prodigy script, rename it to xdg-open and add it to path. Optionally Install alacritty(terminal) and rofi(launcher menu) or change them in the config_  
 **or**
 
 ```bash
